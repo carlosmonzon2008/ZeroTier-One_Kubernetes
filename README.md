@@ -9,7 +9,7 @@ configmap/zerotier-networks created
 deployment.apps/zerotier created
 ```
 
-> ### - In this example I use a ConfigMap to store the \<`network ID`\>, which in case of being more than one must be separated by space. I have also commented the option of a Secret. In case you want to use the Secret is only to comment the ConfigMap part and uncomment the Secret part, and also comment the "configMapKeyRef" block and uncomment the "secretKeyRef" block inside the Deployment.
+> ### - In this example I use a ConfigMap to store the \<`network ID`\>, which in case of being more than one must be separated by spaces. I have also commented on the block that corresponds to a Secret. In case you want to use the Secret you only need to comment the "ConfigMap" block and uncomment the "Secret" block, and also comment the "configMapKeyRef" block and uncomment the "secretKeyRef" block inside the Deployment.
 
 > In case of using the ConfigMap.
 ```yaml
@@ -46,7 +46,7 @@ data:
   NETWORK_IDS: MDEyMzQ1Njc4OWFiY2RlZg==
 type: Opaque
 ```
-`Replace the NETWORK_IDS value with the ID(s) of your ZeroTier network(s), base 64 encoded.`
+`Replace the NETWORK_IDS value with the ID(s) of your ZeroTier network(s), base64 encoded.`
 
 > Example of how to encode in base64 from a Linux terminal.
 ```console
