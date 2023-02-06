@@ -1,0 +1,138 @@
+##Author: Carlos R. Monzon G.
+##Date: 06/feb/2023
+#------------------------------------------------------------------------------
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: zerotier
+  labels:
+    app: zerotier
+    app.kubernetes.io/component: zerotier
+    app.kubernetes.io/instance: zerotier
+    app.kubernetes.io/name: zerotier
+    app.kubernetes.io/part-of: zerotier
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+  storageClassName: standard
+  volumeMode: Filesystem
+#------------------------------------------------------------------------------
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: zerotier-networks
+  labels:
+    app: zerotier
+    app.kubernetes.io/component: zerotier
+    app.kubernetes.io/instance: zerotier
+    app.kubernetes.io/name: zerotier
+    app.kubernetes.io/part-of: zerotier
+data:
+  NETWORK_IDS: 0123456789abcdef
+#------------------------------------------------------------------------------
+#---
+#kind: Secret
+#apiVersion: v1
+#metadata:
+#  name: zerotier-networks
+#  labels:
+#    app: zerotier
+#    app.kubernetes.io/component: zerotier
+#    app.kubernetes.io/instance: zerotier
+#    app.kubernetes.io/name: zerotier
+#    app.kubernetes.io/part-of: zerotier
+#data:
+#  NETWORK_IDS: MDEyMzQ1Njc4OWFiY2RlZg==
+#type: Opaque
+#------------------------------------------------------------------------------
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: zerotier
+  labels:
+    app: zerotier
+    app.kubernetes.io/component: zerotier
+    app.kubernetes.io/instance: zerotier
+    app.kubernetes.io/name: zerotier
+    app.kubernetes.io/part-of: zerotier
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+  selector:
+    matchLabels:
+      app: zerotier
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: zerotier
+        deployment: zerotier
+    spec:
+      serviceAccountName: default
+      volumes:
+        - name: zerotier-one
+          persistentVolumeClaim:
+            claimName: zerotier
+      containers:
+##-----------------------------------------------------Optional-----------------------------------------------------
+        - name: nginx-hello-world
+##Experience ZeroTier: Zero-trust networking for the cloud
+##https://developer.ibm.com/articles/experience-zerotier-zero-trust-networking-for-the-cloud/
+##
+##Running ZeroTier on OpenShift (container image used in this example)
+##https://video.ibm.com/recorded/131253603
+          image: docker.io/glimberg/ngzt-helloworld:1
+          imagePullPolicy: IfNotPresent
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+##-----------------------------------------------------Optional-----------------------------------------------------
+        - name: kubernetes-zerotier
+          args: [ "$(NETWORK_IDS)" ]
+          resources: {}
+##ZeroTier One in a container!
+##https://hub.docker.com/r/zerotier/zerotier
+          image: docker.io/zerotier/zerotier:latest
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: NETWORK_IDS
+            valueFrom:
+              configMapKeyRef:
+                name: zerotier-networks
+                key: NETWORK_IDS
+#          - name: NETWORK_IDS
+#            valueFrom:
+#              secretKeyRef:
+#                name: zerotier-networks
+#                key: NETWORK_IDS
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+              - NET_ADMIN
+              - SYS_ADMIN
+          ports:
+            - containerPort: 9993
+              protocol: UDP
+          volumeMounts:
+            - name: zerotier-one
+              mountPath: /var/lib/zerotier-one/
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+#------------------------------------------------------------------------------
